@@ -11,7 +11,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 def euclidean_distance(v1, v2):
 	return np.linalg.norm(v1 - v2)
 
-def greedy_select(X, trials): 
+def greedy_select(X, trials=10): 
 	'''
 	Greedily select points according to which is 
 	closest to any previously seen sample
@@ -52,7 +52,7 @@ def greedy_select(X, trials):
 
 	return
 
-def antigreedy_select(X, trials):
+def antigreedy_select(X, trials=10):
 	'''
 	Select points according to which is 
 	furthest from any previously seen sample

@@ -7,6 +7,92 @@ import scipy.sparse.linalg
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_absolute_error
 
+def euclidean_distance(v1, v2):
+    return np.linalg.norm(v1 - v2)
+
+def greedy_select(user_train, user_test, items, trials=10):
+
+    # Find positively rated samples
+    liked = [i for i in user_train.nonzero()[0] if user_train[i] > 0]
+    disliked = [i for i in user_train.nonzero()[0] if user_train[i] < 0]
+    unseen = user_test.nonzero()[0]
+
+    new_samples = []
+
+    for _ in range(trials):
+
+        # Looking for point with smallest minimum distance
+        min_seen = [float('inf'), -1]
+        for i in [x for x in unseen if (x not in new_samples)]:
+            for j in (liked+new_samples):
+                v1 = items[i,:]
+                v2 = items[j,:]
+                dist = euclidean_distance(v1, v2)
+                if dist < min_seen[0]:
+                    min_seen = [dist, i]
+
+        new_samples.append(min_seen[1])
+        
+        # All items
+        plt.scatter(items[:,0], items[:,1], alpha=0.2)
+
+        plt.scatter(items[liked,0], items[liked,1], s=50,c=['green']*len(liked), alpha=0.5)
+        plt.scatter(items[disliked,0], items[disliked,1], s=50,c=['red']*len(disliked), alpha=0.5)
+        plt.scatter(items[new_samples,0], items[new_samples,1], s=100,c=['blue']*len(new_samples), alpha=0.7)
+        plt.show()
+
+
+def antigreedy_select(user_train, user_test, items, trials=10):
+    '''
+    Select points according to which is 
+    furthest from any previously seen sample
+
+    Distance Metric: Euclidean
+    '''
+
+    # Find positively rated samples
+    liked = [i for i in user_train.nonzero()[0] if user_train[i] > 0]
+    disliked = [i for i in user_train.nonzero()[0] if user_train[i] < 0]
+    unseen = user_test.nonzero()[0]
+
+    new_samples = []
+
+    for _ in range(trials):
+
+        # Looking for point with largest minimum distance
+        max_min_seen = [float('-inf'), -1]
+
+        # For each potential sample
+        for i in [x for x in unseen if x not in new_samples]:
+
+            # Calculate the minimum distance
+            min_seen = [float('inf'), -1]
+
+            # To all previously seen samples
+            for j in (liked+new_samples):
+                v1 = items[i,:]
+                v2 = items[j,:]
+                #dist = 1.0 - cosine_similarity(v1, v2)[0][0]
+                #dist = cosine_similarity(v1, v2)[0][0]
+                dist = euclidean_distance(v1, v2)
+                if dist < min_seen[0]:
+                    min_seen = [dist, i]
+
+            if min_seen[0] > max_min_seen[0]:
+                max_min_seen = min_seen
+
+        new_samples.append(max_min_seen[1])
+        
+        # All items
+        plt.scatter(items[:,0], items[:,1], alpha=0.2)
+
+        plt.scatter(items[liked,0], items[liked,1], s=50,c=['green']*len(liked), alpha=0.5)
+        plt.scatter(items[disliked,0], items[disliked,1], s=50,c=['red']*len(disliked), alpha=0.5)
+        plt.scatter(items[new_samples,0], items[new_samples,1], s=100,c=['blue']*len(new_samples), alpha=0.7)
+        plt.show()
+
+    return
+
 data_dir = "data/ml-100k/"
 
 # 100,000 ratings for 1000 users on 1700 movies
@@ -51,25 +137,12 @@ X_test = np.array(X_test.toarray())
 
 #ks = np.arange(2, 50)
 k = 2
-train_mae = 0 #np.zeros(ks.shape[0])
-test_mae = 0 #np.zeros(ks.shape[0])
 train_scores = X_train[(train_rows, train_cols)]
 test_scores = X_test[(test_rows, test_cols)]
 
 # Now take SVD of X_train
 # (n x k) . (k x k) . (k x d)
 U, s, Vt = np.linalg.svd(X_train, full_matrices=False)
-
-#for j, k in enumerate(ks):
-X_pred = U[:, 0:k].dot(np.diag(s[0:k])).dot(Vt[0:k, :])
-
-pred_train_scores = X_pred[(train_rows, train_cols)]
-pred_test_scores = X_pred[(test_rows, test_cols)]
-
-train_mae = mean_absolute_error(train_scores, pred_train_scores)
-test_mae = mean_absolute_error(test_scores, pred_test_scores)
-
-print(k,  train_mae, test_mae)
 
 # What we really want are movie vectors (d x k)
 X_svd = np.transpose(np.diag(s[0:k]).dot(Vt[0:k, :]))
@@ -83,17 +156,23 @@ plt.scatter(X_svd[:,0], X_svd[:,1])
 plt.show()
 
 # Check user rating counts
-train_counts = [np.count_nonzero(X_train[i,:]) for i in range(X_train.shape[0])]
+train_counts = [(i, np.count_nonzero(X_train[i,:])) for i in range(X_train.shape[0])]
+#print(train_counts)
 
 # Check which test users are good to test on.
 test_counts = [(i, np.count_nonzero(X_test[i,:])) for i in range(X_test.shape[0])]
-print(test_counts)
-good_test_users = [x[0] for x in test_counts if x[1] > 100]
-print(good_test_users)
+#print(test_counts)
 
-# plt.plot(ks, train_mae, 'k', label="Train")
-# plt.plot(ks, test_mae, 'r', label="Test")
-# plt.xlabel("k")
-# plt.ylabel("MAE")
-# plt.legend()
-# plt.show()
+# So there is overlap from train / test in (uid, rid, rating) tuples. 
+# Every user in test is in train, with some nonzero number of ratings. 
+
+# Some user counts:
+# User 0: 262
+# User 1: 52
+# User 2: 44
+
+USER = 0
+
+#greedy_select(X_train[USER,:], X_test[USER,:], X_svd, trials=10)
+antigreedy_select(X_train[USER,:], X_test[USER,:], X_svd, trials=10)
+
