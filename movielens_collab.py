@@ -34,12 +34,24 @@ def plot_mesh(X, clf):
     Z = Z.reshape(xx.shape)
     plt.contourf(xx, yy, Z, cmap=plt.cm.RdYlGn, alpha=0.1)
 
-def greedy_select(user_train, user_test, items, trials=10):
+def greedy_select(user_train, user_test, items, trials=10, num_test=50):
 
     # Find positively rated samples
     liked = [i for i in user_train.nonzero()[0] if user_train[i] > 0]
     disliked = [i for i in user_train.nonzero()[0] if user_train[i] < 0]
     unseen = user_test.nonzero()[0]
+
+    # Reserve first 50 samples in test as actual test samples
+    test_unseen = unseen[:num_test]
+    test_err = []
+    train_err = []
+
+    # Maintain static test set
+    X_test = items[test_unseen,:]
+    y_test = [int(x > 0) for x in user_test[test_unseen]]
+
+    # The rest are "validation samples" that we iterate over
+    unseen = unseen[num_test:] 
 
     new_samples = []
     new_labels = []
@@ -72,15 +84,28 @@ def greedy_select(user_train, user_test, items, trials=10):
         # Plot model
         C = 1.0
         rated = liked+disliked
-        X = np.concatenate((items[rated,:], items[new_samples,:]))
-        y = [int(x > 0) for x in np.concatenate((user_train[rated], user_test[new_samples]))]
-        #clf = svm.SVC(kernel='linear', C=C).fit(X=X, y=y)
+        X_train = np.concatenate((items[rated,:], items[new_samples,:]))
+        y_train = [int(x > 0) for x in np.concatenate((user_train[rated], user_test[new_samples]))]
+        clf = svm.SVC(kernel='linear', C=C).fit(X=X_train, y=y_train)
         #clf = svm.SVC(kernel='poly', degree=3, C=C).fit(X=X, y=y)
         #clf = svm.SVC(kernel='rbf', gamma=0.7, C=C).fit(X=X, y=y)
-        clf = KNeighborsClassifier(n_neighbors=1).fit(X=X,y=y)
+        #clf = KNeighborsClassifier(n_neighbors=1).fit(X=X_train,y=y_train)
+        
+        # Append errors
+        train_err.append(clf.score(X_train, y_train))
+        test_err.append(clf.score(X_test, y_test))
+        
         plot_mesh(X_svd, clf)
     plt.suptitle('Greedy Recommendation')
     
+    plt.show()
+
+    x = range(trials)
+    plt.plot(x, train_err, label='Train')
+    plt.plot(x, test_err, label='Test')
+    plt.legend(loc='upper right')
+    plt.xlabel('Number of Additional Samples')
+    plt.ylabel('Performance')
     plt.show()
 
 
@@ -96,6 +121,18 @@ def antigreedy_select(user_train, user_test, items, trials=10):
     liked = [i for i in user_train.nonzero()[0] if user_train[i] > 0]
     disliked = [i for i in user_train.nonzero()[0] if user_train[i] < 0]
     unseen = user_test.nonzero()[0]
+
+    # Reserve first 50 samples in test as actual test samples
+    test_unseen = unseen[:num_test]
+    test_err = []
+    train_err = []
+
+    # Maintain static test set
+    X_test = items[test_unseen,:]
+    y_test = [int(x > 0) for x in user_test[test_unseen]]
+
+    # The rest are "validation samples" that we iterate over
+    unseen = unseen[num_test:] 
 
     new_samples = []
     new_labels = []
@@ -139,17 +176,29 @@ def antigreedy_select(user_train, user_test, items, trials=10):
         # Plot model
         C = 1.0
         rated = liked+disliked
-        X = np.concatenate((items[rated,:], items[new_samples,:]))
-        y = [int(x > 0) for x in np.concatenate((user_train[rated], user_test[new_samples]))]
+        X_train = np.concatenate((items[rated,:], items[new_samples,:]))
+        y_train = [int(x > 0) for x in np.concatenate((user_train[rated], user_test[new_samples]))]
 
         #clf = svm.SVC(kernel='linear', C=C).fit(X=X, y=y)
         #clf = svm.SVC(kernel='poly', degree=3, C=C).fit(X=X, y=y)
         #clf = svm.SVC(kernel='rbf', gamma=0.7, C=C).fit(X=X, y=y)
-        clf = KNeighborsClassifier(n_neighbors=1).fit(X=X,y=y)
+        clf = KNeighborsClassifier(n_neighbors=1).fit(X=X_train,y=y_train)
         plot_mesh(X_svd, clf)
+
+        # Append errors
+        train_err.append(clf.score(X_train, y_train))
+        test_err.append(clf.score(X_test, y_test))
     
     plt.suptitle('Antigreedy Recommendation')
 
+    plt.show()
+
+    x = range(trials)
+    plt.plot(x, train_err, label='Train')
+    plt.plot(x, test_err, label='Test')
+    plt.legend(loc='upper right')
+    plt.xlabel('Number of Additional Samples')
+    plt.ylabel('Performance')
     plt.show()
 
     return
@@ -162,6 +211,18 @@ def active_select(user_train, user_test, items, trials=10):
     liked = [i for i in user_train.nonzero()[0] if user_train[i] > 0]
     disliked = [i for i in user_train.nonzero()[0] if user_train[i] < 0]
     unseen = user_test.nonzero()[0]
+
+    # Reserve first 50 samples in test as actual test samples
+    test_unseen = unseen[:num_test]
+    test_err = []
+    train_err = []
+
+    # Maintain static test set
+    X_test = items[test_unseen,:]
+    y_test = [int(x > 0) for x in user_test[test_unseen]]
+
+    # The rest are "validation samples" that we iterate over
+    unseen = unseen[num_test:] 
 
     new_samples = []
     new_labels = []
@@ -204,16 +265,28 @@ def active_select(user_train, user_test, items, trials=10):
         
         # Plot model
         rated = liked+disliked
-        X = np.concatenate((items[rated,:], items[new_samples,:]))
-        y = [int(x > 0) for x in np.concatenate((user_train[rated], user_test[new_samples]))]
+        X_train = np.concatenate((items[rated,:], items[new_samples,:]))
+        y_train = [int(x > 0) for x in np.concatenate((user_train[rated], user_test[new_samples]))]
         #clf = svm.SVC(kernel='linear', C=C).fit(X=X, y=y)
         #clf = svm.SVC(kernel='poly', degree=3, C=C).fit(X=X, y=y)
         #clf = svm.SVC(kernel='rbf', gamma=0.7, C=C).fit(X=X, y=y)
-        clf = KNeighborsClassifier(n_neighbors=1).fit(X=X,y=y)
+        clf = KNeighborsClassifier(n_neighbors=1).fit(X=X_train,y=y_train)
         plot_mesh(X_svd, clf)
+
+        # Append errors
+        train_err.append(clf.score(X_train, y_train))
+        test_err.append(clf.score(X_test, y_test))
     
     plt.suptitle('Active Recommendation')
 
+    plt.show()
+
+    x = range(trials)
+    plt.plot(x, train_err, label='Train')
+    plt.plot(x, test_err, label='Test')
+    plt.legend(loc='upper right')
+    plt.xlabel('Number of Additional Samples')
+    plt.ylabel('Performance')
     plt.show()
 
     return
@@ -272,8 +345,6 @@ if __name__ == "__main__":
     train_scores = X_train[(train_rows, train_cols)]
     test_scores = X_test[(test_rows, test_cols)]
 
-
-
     # Now take SVD of X_train
     # (n x k) . (k x k) . (k x d)
     #U, s, Vt = np.linalg.svd(X_train, full_matrices=False)
@@ -314,7 +385,8 @@ if __name__ == "__main__":
     #USERS = [i for i,c in train_counts if c < 20]
 
     # Pick USERS with many train samples for the demo
-    USERS = [i for i,c in train_counts if c > 20]
+    USERS = [i for i,c in train_counts if c > 100]
+    print(len(USERS))
 
     # Swap train and test to get more test samples
     X_train, X_test = X_test, X_train
@@ -325,13 +397,17 @@ if __name__ == "__main__":
     # Note that the furthest point in train may not be the furthest point overall
     # We only have ten test samples per user
 
+        # Set number of trials equal to total number of unseen movies
+        trials = 16
+        #trials = len(X_test[USER,:].nonzero()[0])
+
         print("\nSelecting samples for user:", USER)
         if alg == 'greedy':
-            greedy_select(X_train[USER,:], X_test[USER,:], X_svd, trials=9)
+            greedy_select(X_train[USER,:], X_test[USER,:], X_svd, trials=trials)
         elif alg == 'antigreedy':
-            antigreedy_select(X_train[USER,:], X_test[USER,:], X_svd, trials=9)
+            antigreedy_select(X_train[USER,:], X_test[USER,:], X_svd, trials=trials)
         elif alg == 'active':
-            active_select(X_train[USER,:], X_test[USER,:], X_svd, trials=9)
+            active_select(X_train[USER,:], X_test[USER,:], X_svd, trials=trials)
         else:
             print("Input \'greedy\' or \'antigreedy\' or \'active\'")
 
