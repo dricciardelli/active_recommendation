@@ -74,8 +74,6 @@ def greedy_select(user_train, user_test, items, trials=10):
         rated = liked+disliked
         X = np.concatenate((items[rated,:], items[new_samples,:]))
         y = [int(x > 0) for x in np.concatenate((user_train[rated], user_test[new_samples]))]
-        print(X)
-        print(y)
         #clf = svm.SVC(kernel='linear', C=C).fit(X=X, y=y)
         #clf = svm.SVC(kernel='poly', degree=3, C=C).fit(X=X, y=y)
         #clf = svm.SVC(kernel='rbf', gamma=0.7, C=C).fit(X=X, y=y)
@@ -143,9 +141,6 @@ def antigreedy_select(user_train, user_test, items, trials=10):
         rated = liked+disliked
         X = np.concatenate((items[rated,:], items[new_samples,:]))
         y = [int(x > 0) for x in np.concatenate((user_train[rated], user_test[new_samples]))]
-        print(new_samples)
-        print(user_test[new_samples])
-        print(new_labels)
 
         #clf = svm.SVC(kernel='linear', C=C).fit(X=X, y=y)
         #clf = svm.SVC(kernel='poly', degree=3, C=C).fit(X=X, y=y)
