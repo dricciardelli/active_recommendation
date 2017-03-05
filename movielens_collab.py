@@ -109,7 +109,7 @@ def greedy_select(user_train, user_test, items, trials=10, num_test=50):
     plt.show()
 
 
-def antigreedy_select(user_train, user_test, items, trials=10):
+def antigreedy_select(user_train, user_test, items, trials=10, num_test=50):
     '''
     Select points according to whose minimum distance to any previously
     seen data point is maximal
@@ -203,7 +203,7 @@ def antigreedy_select(user_train, user_test, items, trials=10):
 
     return
 
-def active_select(user_train, user_test, items, trials=10):
+def active_select(user_train, user_test, items, trials=10, num_test=50):
     """
     Select points according to the classifier
     """
@@ -398,7 +398,7 @@ if __name__ == "__main__":
     # We only have ten test samples per user
 
         # Set number of trials equal to total number of unseen movies
-        trials = 16
+        trials = 36
         #trials = len(X_test[USER,:].nonzero()[0])
 
         print("\nSelecting samples for user:", USER)
