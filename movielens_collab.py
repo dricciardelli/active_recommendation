@@ -49,8 +49,8 @@ def greedy_select(user_train, user_test, items, trials=10):
         # Looking for point with smallest minimum distance
         min_seen = [float('inf'), -1]
         for i in [x for x in unseen if (x not in new_samples)]:
+            v1 = items[i,:]
             for j in (liked+new_samples):
-                v1 = items[i,:]
                 v2 = items[j,:]
                 dist = euclidean_distance(v1, v2)
                 if dist < min_seen[0]:
@@ -61,7 +61,7 @@ def greedy_select(user_train, user_test, items, trials=10):
         new_labels.append(map_labels(user_test[min_seen[1]]))
         
         # All items
-        plt.subplot(2,2,tr+1)
+        plt.subplot(int(np.sqrt(trials)),int(np.sqrt(trials)),tr+1)
         plt.subplots_adjust(wspace=0.4, hspace=0.4)
 
         plt.scatter(items[:,0], items[:,1], alpha=0.1, c=['black']*items.shape[0])
@@ -74,6 +74,8 @@ def greedy_select(user_train, user_test, items, trials=10):
         rated = liked+disliked
         X = np.concatenate((items[rated,:], items[new_samples,:]))
         y = [int(x > 0) for x in np.concatenate((user_train[rated], user_test[new_samples]))]
+        print(X)
+        print(y)
         #clf = svm.SVC(kernel='linear', C=C).fit(X=X, y=y)
         #clf = svm.SVC(kernel='poly', degree=3, C=C).fit(X=X, y=y)
         #clf = svm.SVC(kernel='rbf', gamma=0.7, C=C).fit(X=X, y=y)
@@ -86,8 +88,8 @@ def greedy_select(user_train, user_test, items, trials=10):
 
 def antigreedy_select(user_train, user_test, items, trials=10):
     '''
-    Select points according to which is 
-    furthest from any previously seen sample
+    Select points according to whose minimum distance to any previously
+    seen data point is maximal
 
     Distance Metric: Euclidean
     '''
@@ -107,13 +109,13 @@ def antigreedy_select(user_train, user_test, items, trials=10):
 
         # For each potential sample
         for i in [x for x in unseen if x not in new_samples]:
-
+            v1 = items[i,:]
+            
             # Calculate the minimum distance
             min_seen = [float('inf'), -1]
 
             # To all previously seen samples
             for j in (liked+new_samples+disliked):
-                v1 = items[i,:]
                 v2 = items[j,:]
                 dist = euclidean_distance(v1, v2)
                 if dist < min_seen[0]:
@@ -124,10 +126,10 @@ def antigreedy_select(user_train, user_test, items, trials=10):
 
         print(X_titles[max_min_seen[1]])
         new_samples.append(max_min_seen[1])
-        new_labels.append(map_labels(user_test[min_seen[1]]))
+        new_labels.append(map_labels(user_test[max_min_seen[1]]))
         
         # All items
-        plt.subplot(2,2,tr+1)
+        plt.subplot(int(np.sqrt(trials)),int(np.sqrt(trials)),tr+1)
         plt.subplots_adjust(wspace=0.4, hspace=0.4)
 
         plt.scatter(items[:,0], items[:,1], alpha=0.1, s=5, c=['black']*items.shape[0])
@@ -141,6 +143,10 @@ def antigreedy_select(user_train, user_test, items, trials=10):
         rated = liked+disliked
         X = np.concatenate((items[rated,:], items[new_samples,:]))
         y = [int(x > 0) for x in np.concatenate((user_train[rated], user_test[new_samples]))]
+        print(new_samples)
+        print(user_test[new_samples])
+        print(new_labels)
+
         #clf = svm.SVC(kernel='linear', C=C).fit(X=X, y=y)
         #clf = svm.SVC(kernel='poly', degree=3, C=C).fit(X=X, y=y)
         #clf = svm.SVC(kernel='rbf', gamma=0.7, C=C).fit(X=X, y=y)
@@ -192,7 +198,7 @@ def active_select(user_train, user_test, items, trials=10):
         new_labels.append(map_labels(user_test[sample]))
 
         # All items
-        plt.subplot(2,2,tr+1)
+        plt.subplot(int(np.sqrt(trials)),int(np.sqrt(trials)),tr+1)
         plt.subplots_adjust(wspace=0.4, hspace=0.4)
 
         plt.scatter(items[:,0], items[:,1], alpha=0.1, s=5, c=['black']*items.shape[0])
@@ -217,116 +223,121 @@ def active_select(user_train, user_test, items, trials=10):
 
     return
 
+if __name__ == "__main__":
+    data_dir = "data/ml-100k/"
 
-data_dir = "data/ml-100k/"
+    # 100,000 ratings for 1000 users on 1700 movies
+    # Density 0.06
+    # 90,570 x 4: (uid, mid, rating, rid)
+    data_shape = (943, 1682)
 
-# 100,000 ratings for 1000 users on 1700 movies
-# Density 0.06
-# 90,570 x 4: (uid, mid, rating, rid)
-data_shape = (943, 1682)
+    df = pandas.read_csv(data_dir + "ua.base", sep="\t", header=-1)
+    values = df.values
+    values[:, 0:2] -= 1
+    X_train = scipy.sparse.csr_matrix((values[:, 2], (values[:, 0], values[:, 1])), dtype=np.float, shape=data_shape)
 
-df = pandas.read_csv(data_dir + "ua.base", sep="\t", header=-1)
-values = df.values
-values[:, 0:2] -= 1
-X_train = scipy.sparse.csr_matrix((values[:, 2], (values[:, 0], values[:, 1])), dtype=np.float, shape=data_shape)
+    df = pandas.read_csv(data_dir + "ua.test", sep="\t", header=-1)
+    values = df.values
+    values[:, 0:2] -= 1
+    X_test = scipy.sparse.csr_matrix((values[:, 2], (values[:, 0], values[:, 1])), dtype=np.float, shape=data_shape)
 
-df = pandas.read_csv(data_dir + "ua.test", sep="\t", header=-1)
-values = df.values
-values[:, 0:2] -= 1
-X_test = scipy.sparse.csr_matrix((values[:, 2], (values[:, 0], values[:, 1])), dtype=np.float, shape=data_shape)
+    df = pandas.read_csv(data_dir + "u.item", sep="|", header=-1, encoding='latin-1')
+    values = df.values
 
-df = pandas.read_csv(data_dir + "u.item", sep="|", header=-1, encoding='latin-1')
-values = df.values
+    # Maintain genre data, movie_title
+    X_titles = values[:,1]
 
-# Maintain genre data, movie_title
-X_titles = values[:,1]
+    # Compute means of nonzero elements
+    X_row_mean = np.zeros(data_shape[0])
+    X_row_sum = np.zeros(data_shape[0])
 
-# Compute means of nonzero elements
-X_row_mean = np.zeros(data_shape[0])
-X_row_sum = np.zeros(data_shape[0])
+    train_rows, train_cols = X_train.nonzero()
 
-train_rows, train_cols = X_train.nonzero()
+    # Iterate through nonzero elements to compute sums and counts of rows elements
+    for i in range(train_rows.shape[0]):
+        X_row_mean[train_rows[i]] += X_train[train_rows[i], train_cols[i]]
+        X_row_sum[train_rows[i]] += 1
 
-# Iterate through nonzero elements to compute sums and counts of rows elements
-for i in range(train_rows.shape[0]):
-    X_row_mean[train_rows[i]] += X_train[train_rows[i], train_cols[i]]
-    X_row_sum[train_rows[i]] += 1
+    # Note that (X_row_sum == 0) is required to prevent divide by zero
+    X_row_mean /= X_row_sum + (X_row_sum == 0)
 
-# Note that (X_row_sum == 0) is required to prevent divide by zero
-X_row_mean /= X_row_sum + (X_row_sum == 0)
+    # Subtract mean rating for each user
+    for i in range(train_rows.shape[0]):
+        X_train[train_rows[i], train_cols[i]] -= X_row_mean[train_rows[i]]
 
-# Subtract mean rating for each user
-for i in range(train_rows.shape[0]):
-    X_train[train_rows[i], train_cols[i]] -= X_row_mean[train_rows[i]]
+    test_rows, test_cols = X_test.nonzero()
+    for i in range(test_rows.shape[0]):
+        X_test[test_rows[i], test_cols[i]] -= X_row_mean[test_rows[i]]
 
-test_rows, test_cols = X_test.nonzero()
-for i in range(test_rows.shape[0]):
-    X_test[test_rows[i], test_cols[i]] -= X_row_mean[test_rows[i]]
+    X_train = np.array(X_train.toarray())
+    X_test = np.array(X_test.toarray())
 
-X_train = np.array(X_train.toarray())
-X_test = np.array(X_test.toarray())
-
-#ks = np.arange(2, 50)
-k = 2 # 50 for TSNE
-train_scores = X_train[(train_rows, train_cols)]
-test_scores = X_test[(test_rows, test_cols)]
+    #ks = np.arange(2, 50)
+    k = 2 # 50 for TSNE
+    train_scores = X_train[(train_rows, train_cols)]
+    test_scores = X_test[(test_rows, test_cols)]
 
 
 
-# Now take SVD of X_train
-# (n x k) . (k x k) . (k x d)
-U, s, Vt = np.linalg.svd(X_train, full_matrices=False)
+    # Now take SVD of X_train
+    # (n x k) . (k x k) . (k x d)
+    #U, s, Vt = np.linalg.svd(X_train, full_matrices=False)
+    # What we really want are movie vectors (d x k)
+    #X_svd = np.transpose(np.diag(s[0:k]).dot(Vt[0:k, :]))
+    #np.save('ml_100k_svd.npy', X_svd)
 
-# What we really want are movie vectors (d x k)
-X_svd = np.transpose(np.diag(s[0:k]).dot(Vt[0:k, :]))
+    X_svd = np.load('ml_100k_svd.npy')
 
-#model = TSNE(n_components=2, random_state=0)
-#X_svd = model.fit_transform(X_svd) 
+    #model = TSNE(n_components=2, random_state=0)
+    #X_svd = model.fit_transform(X_svd) 
 
-# Peek at explained variance
-#plt.plot(range(s.shape[0]), np.cumsum(s) / np.sum(s))
-#plt.show()
+    # Peek at explained variance
+    #plt.plot(range(s.shape[0]), np.cumsum(s) / np.sum(s))
+    #plt.show()
 
-# Peek at movie representations (2-d only)
-#plt.scatter(X_svd[:,0], X_svd[:,1])
-#plt.show()
+    # Peek at movie representations (2-d only)
+    #plt.scatter(X_svd[:,0], X_svd[:,1])
+    #plt.show()
 
-# Check user rating counts
-train_counts = [(i, np.count_nonzero(X_train[i,:])) for i in range(X_train.shape[0])]
-#print(train_counts)
+    # Check user rating counts
+    train_counts = [(i, np.count_nonzero(X_train[i,:])) for i in range(X_train.shape[0])]
+    #print(train_counts)
 
-# Check which test users are good to test on.
-test_counts = [(i, np.count_nonzero(X_test[i,:])) for i in range(X_test.shape[0])]
-#print(test_counts)
+    # Check which test users are good to test on.
+    test_counts = [(i, np.count_nonzero(X_test[i,:])) for i in range(X_test.shape[0])]
+    #print(test_counts)
 
-# So there is overlap from train / test in (uid, rid, rating) tuples. 
-# Every user in test is in train, with some nonzero number of ratings. 
+    # So there is overlap from train / test in (uid, rid, rating) tuples. 
+    # Every user in test is in train, with some nonzero number of ratings. 
 
-# Some user counts:
-# User 0: 262
-# User 1: 52
-# User 2: 44
+    # Some user counts:
+    # User 0: 262
+    # User 1: 52
+    # User 2: 44
 
-# Pick USERS with few train samples for the demo
-USERS = [i for i,c in train_counts if c < 20]
+    # Pick USERS with few train samples for the demo
+    #USERS = [i for i,c in train_counts if c < 20]
 
-# Pick USERS with many train samples for the demo
-#USERS = [i for i,c in train_counts if c > 20]
+    # Pick USERS with many train samples for the demo
+    USERS = [i for i,c in train_counts if c > 20]
 
-alg = sys.argv[1]
+    # Swap train and test to get more test samples
+    X_train, X_test = X_test, X_train
 
-for USER in USERS:
-# Note that the furthest point in train may not be the furthest point overall
-# We only have ten test samples per user
+    alg = sys.argv[1]
 
-    print("\nSelecting samples for user:", USER)
-    if alg == 'greedy':
-        greedy_select(X_train[USER,:], X_test[USER,:], X_svd, trials=4)
-    elif alg == 'antigreedy':
-        antigreedy_select(X_train[USER,:], X_test[USER,:], X_svd, trials=4)
-    elif alg == 'active':
-        active_select(X_train[USER,:], X_test[USER,:], X_svd, trials=4)
-    else:
-        print("Input \'greedy\' or \'antigreedy\' or \'active\'")
+    for USER in USERS:
+    # Note that the furthest point in train may not be the furthest point overall
+    # We only have ten test samples per user
+
+        print("\nSelecting samples for user:", USER)
+        if alg == 'greedy':
+            greedy_select(X_train[USER,:], X_test[USER,:], X_svd, trials=9)
+        elif alg == 'antigreedy':
+            antigreedy_select(X_train[USER,:], X_test[USER,:], X_svd, trials=9)
+        elif alg == 'active':
+            active_select(X_train[USER,:], X_test[USER,:], X_svd, trials=9)
+        else:
+            print("Input \'greedy\' or \'antigreedy\' or \'active\'")
 
 
