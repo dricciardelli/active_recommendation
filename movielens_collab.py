@@ -289,7 +289,6 @@ def active_select(user_train, user_test, items, trials=10, num_test=50):
     plt.ylabel('Performance')
     plt.show()
 
-<<<<<<< HEAD
 def random_select(user_train, user_test, items, trials=10):
     """
     Select points randomly
@@ -313,10 +312,10 @@ def random_select(user_train, user_test, items, trials=10):
         new_labels.append(map_labels(user_test[pt]))
 
         # All items
-        plt.subplot(2,2,tr+1)
+        plt.subplot(int(np.sqrt(trials)),int(np.sqrt(trials)),tr+1)
         plt.subplots_adjust(wspace=0.4, hspace=0.4)
 
-        # plt.scatter(items[:,0], items[:,1], alpha=0.1, c=['black']*items.shape[0])
+        plt.scatter(items[:,0], items[:,1], alpha=0.1, c=['black']*items.shape[0])
         plt.scatter(items[liked,0], items[liked,1], s=50,c=['green']*len(liked), alpha=0.25)
         plt.scatter(items[disliked,0], items[disliked,1], s=50,c=['red']*len(disliked), alpha=0.25)
         plt.scatter(items[new_samples,0], items[new_samples,1], s=100,c=new_labels, alpha=1.00)
@@ -347,7 +346,7 @@ def eps_select(epsilon, user_train, user_test, items, trials=10):
     new_samples = []
     new_labels = []
 
-    print("Running using epsilon=" + str(epsilon) + "%")
+    print("Running using epsilon=" + str(epsilon*100) + "%")
 
     for tr in range(trials):
 
@@ -374,10 +373,10 @@ def eps_select(epsilon, user_train, user_test, items, trials=10):
             new_labels.append(map_labels(user_test[min_seen[1]]))
 
         # All items
-        plt.subplot(2,2,tr+1)
+        plt.subplot(int(np.sqrt(trials)),int(np.sqrt(trials)),tr+1)
         plt.subplots_adjust(wspace=0.4, hspace=0.4)
 
-        # plt.scatter(items[:,0], items[:,1], alpha=0.1, c=['black']*items.shape[0])
+        plt.scatter(items[:,0], items[:,1], alpha=0.1, c=['black']*items.shape[0])
         plt.scatter(items[liked,0], items[liked,1], s=50,c=['green']*len(liked), alpha=0.25)
         plt.scatter(items[disliked,0], items[disliked,1], s=50,c=['red']*len(disliked), alpha=0.25)
         plt.scatter(items[new_samples,0], items[new_samples,1], s=100,c=new_labels, alpha=1.00)
@@ -504,22 +503,22 @@ if __name__ == "__main__":
     # We only have ten test samples per user
 
         # Set number of trials equal to total number of unseen movies
-        trials = 36
+        trials = 9
         #trials = len(X_test[USER,:].nonzero()[0])
 
-    print("\nSelecting samples for user:", USER)
-    if alg == 'greedy':
-        greedy_select(X_train[USER,:], X_test[USER,:], X_svd, trials=4)
-    elif alg == 'antigreedy':
-        antigreedy_select(X_train[USER,:], X_test[USER,:], X_svd, trials=4)
-    elif alg == 'active':
-        active_select(X_train[USER,:], X_test[USER,:], X_svd, trials=4)
-    elif alg == 'random':
-        # X_train and X_test switched; only 10 samples for training!
-        random_select(X_test[USER,:], X_train[USER,:], X_svd, trials=4)
-    elif alg == 'epsgreedy':
-        # X_train and X_test switched; only 10 samples for training!
-        eps = sys.argv[2]
-        eps_select(float(eps), X_test[USER,:], X_train[USER,:], X_svd, trials=4)
-    else:
-        print("Input \'greedy\' or \'antigreedy\' or \'active\'")
+        print("\nSelecting samples for user:", USER)
+        if alg == 'greedy':
+            greedy_select(X_train[USER,:], X_test[USER,:], X_svd, trials=trials)
+        elif alg == 'antigreedy':
+            antigreedy_select(X_train[USER,:], X_test[USER,:], X_svd, trials=trials)
+        elif alg == 'active':
+            active_select(X_train[USER,:], X_test[USER,:], X_svd, trials=trials)
+        elif alg == 'random':
+            # X_train and X_test switched; only 10 samples for training!
+            random_select(X_test[USER,:], X_train[USER,:], X_svd, trials=trials)
+        elif alg == 'epsgreedy':
+            # X_train and X_test switched; only 10 samples for training!
+            eps = sys.argv[2]
+            eps_select(float(eps), X_test[USER,:], X_train[USER,:], X_svd, trials=trials)
+        else:
+            print("Input \'greedy\' or \'antigreedy\' or \'active\'")
