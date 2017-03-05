@@ -3,7 +3,7 @@
 import sys
 
 import pandas
-import numpy as np 
+import numpy as np
 import scipy.sparse
 import scipy.sparse.linalg
 import matplotlib.pyplot as plt
@@ -51,7 +51,7 @@ def greedy_select(user_train, user_test, items, trials=10, num_test=50):
     y_test = [int(x > 0) for x in user_test[test_unseen]]
 
     # The rest are "validation samples" that we iterate over
-    unseen = unseen[num_test:] 
+    unseen = unseen[num_test:]
 
     new_samples = []
     new_labels = []
@@ -71,7 +71,7 @@ def greedy_select(user_train, user_test, items, trials=10, num_test=50):
         print(X_titles[min_seen[1]])
         new_samples.append(min_seen[1])
         new_labels.append(map_labels(user_test[min_seen[1]]))
-        
+
         # All items
         plt.subplot(int(np.sqrt(trials)),int(np.sqrt(trials)),tr+1)
         plt.subplots_adjust(wspace=0.4, hspace=0.4)
@@ -80,7 +80,7 @@ def greedy_select(user_train, user_test, items, trials=10, num_test=50):
         plt.scatter(items[liked,0], items[liked,1], s=50,c=['green']*len(liked), alpha=0.25)
         plt.scatter(items[disliked,0], items[disliked,1], s=50,c=['red']*len(disliked), alpha=0.25)
         plt.scatter(items[new_samples,0], items[new_samples,1], s=100,c=new_labels, alpha=1.00)
-        
+
         # Plot model
         C = 1.0
         rated = liked+disliked
@@ -90,14 +90,14 @@ def greedy_select(user_train, user_test, items, trials=10, num_test=50):
         #clf = svm.SVC(kernel='poly', degree=3, C=C).fit(X=X, y=y)
         #clf = svm.SVC(kernel='rbf', gamma=0.7, C=C).fit(X=X, y=y)
         #clf = KNeighborsClassifier(n_neighbors=1).fit(X=X_train,y=y_train)
-        
+
         # Append errors
         train_err.append(clf.score(X_train, y_train))
         test_err.append(clf.score(X_test, y_test))
-        
+
         plot_mesh(X_svd, clf)
     plt.suptitle('Greedy Recommendation')
-    
+
     plt.show()
 
     x = range(trials)
@@ -132,7 +132,7 @@ def antigreedy_select(user_train, user_test, items, trials=10, num_test=50):
     y_test = [int(x > 0) for x in user_test[test_unseen]]
 
     # The rest are "validation samples" that we iterate over
-    unseen = unseen[num_test:] 
+    unseen = unseen[num_test:]
 
     new_samples = []
     new_labels = []
@@ -145,7 +145,7 @@ def antigreedy_select(user_train, user_test, items, trials=10, num_test=50):
         # For each potential sample
         for i in [x for x in unseen if x not in new_samples]:
             v1 = items[i,:]
-            
+
             # Calculate the minimum distance
             min_seen = [float('inf'), -1]
 
@@ -162,7 +162,7 @@ def antigreedy_select(user_train, user_test, items, trials=10, num_test=50):
         print(X_titles[max_min_seen[1]])
         new_samples.append(max_min_seen[1])
         new_labels.append(map_labels(user_test[max_min_seen[1]]))
-        
+
         # All items
         plt.subplot(int(np.sqrt(trials)),int(np.sqrt(trials)),tr+1)
         plt.subplots_adjust(wspace=0.4, hspace=0.4)
@@ -172,7 +172,7 @@ def antigreedy_select(user_train, user_test, items, trials=10, num_test=50):
         plt.scatter(items[liked,0], items[liked,1], s=50,c=['green']*len(liked), alpha=0.25)
         plt.scatter(items[disliked,0], items[disliked,1], s=50,c=['red']*len(disliked), alpha=0.25)
         plt.scatter(items[new_samples,0], items[new_samples,1], s=100,c=new_labels, alpha=1.00)
-        
+
         # Plot model
         C = 1.0
         rated = liked+disliked
@@ -188,7 +188,7 @@ def antigreedy_select(user_train, user_test, items, trials=10, num_test=50):
         # Append errors
         train_err.append(clf.score(X_train, y_train))
         test_err.append(clf.score(X_test, y_test))
-    
+
     plt.suptitle('Antigreedy Recommendation')
 
     plt.show()
@@ -222,7 +222,7 @@ def active_select(user_train, user_test, items, trials=10, num_test=50):
     y_test = [int(x > 0) for x in user_test[test_unseen]]
 
     # The rest are "validation samples" that we iterate over
-    unseen = unseen[num_test:] 
+    unseen = unseen[num_test:]
 
     new_samples = []
     new_labels = []
@@ -262,7 +262,7 @@ def active_select(user_train, user_test, items, trials=10, num_test=50):
         plt.scatter(items[liked,0], items[liked,1], s=50,c=['green']*len(liked), alpha=0.25)
         plt.scatter(items[disliked,0], items[disliked,1], s=50,c=['red']*len(disliked), alpha=0.25)
         plt.scatter(items[new_samples,0], items[new_samples,1], s=100,c=new_labels, alpha=1.00)
-        
+
         # Plot model
         rated = liked+disliked
         X_train = np.concatenate((items[rated,:], items[new_samples,:]))
@@ -276,7 +276,7 @@ def active_select(user_train, user_test, items, trials=10, num_test=50):
         # Append errors
         train_err.append(clf.score(X_train, y_train))
         test_err.append(clf.score(X_test, y_test))
-    
+
     plt.suptitle('Active Recommendation')
 
     plt.show()
@@ -289,6 +289,112 @@ def active_select(user_train, user_test, items, trials=10, num_test=50):
     plt.ylabel('Performance')
     plt.show()
 
+<<<<<<< HEAD
+def random_select(user_train, user_test, items, trials=10):
+    """
+    Select points randomly
+    """
+    # Find positively rated samples
+    liked = [i for i in user_train.nonzero()[0] if user_train[i] > 0]
+    disliked = [i for i in user_train.nonzero()[0] if user_train[i] < 0]
+    unseen = user_test.nonzero()[0]
+
+    new_samples = []
+    new_labels = []
+
+    for tr in range(trials):
+
+        # Getting a random point
+        unchecked = [i for i in [x for x in unseen if (x not in new_samples)]]
+        pt = np.random.randint(0, len(unchecked))
+
+        print(X_titles[pt])
+        new_samples.append(pt)
+        new_labels.append(map_labels(user_test[pt]))
+
+        # All items
+        plt.subplot(2,2,tr+1)
+        plt.subplots_adjust(wspace=0.4, hspace=0.4)
+
+        # plt.scatter(items[:,0], items[:,1], alpha=0.1, c=['black']*items.shape[0])
+        plt.scatter(items[liked,0], items[liked,1], s=50,c=['green']*len(liked), alpha=0.25)
+        plt.scatter(items[disliked,0], items[disliked,1], s=50,c=['red']*len(disliked), alpha=0.25)
+        plt.scatter(items[new_samples,0], items[new_samples,1], s=100,c=new_labels, alpha=1.00)
+
+        # Plot model
+        C = 1.0
+        rated = liked+disliked
+        X = np.concatenate((items[rated,:], items[new_samples,:]))
+        y = [int(x > 0) for x in np.concatenate((user_train[rated], user_test[new_samples]))]
+        #clf = svm.SVC(kernel='linear', C=C).fit(X=X, y=y)
+        #clf = svm.SVC(kernel='poly', degree=3, C=C).fit(X=X, y=y)
+        #clf = svm.SVC(kernel='rbf', gamma=0.7, C=C).fit(X=X, y=y)
+        clf = KNeighborsClassifier(n_neighbors=1).fit(X=X,y=y)
+        plot_mesh(X_svd, clf)
+    plt.suptitle('Random Recommendation')
+
+    plt.show()
+
+def eps_select(epsilon, user_train, user_test, items, trials=10):
+    """
+    Select randomly epsilon percent of the time, otherwise greedy
+    """
+    # Find positively rated samples
+    liked = [i for i in user_train.nonzero()[0] if user_train[i] > 0]
+    disliked = [i for i in user_train.nonzero()[0] if user_train[i] < 0]
+    unseen = user_test.nonzero()[0]
+
+    new_samples = []
+    new_labels = []
+
+    print("Running using epsilon=" + str(epsilon) + "%")
+
+    for tr in range(trials):
+
+        # Random
+        if (np.random.uniform() <= epsilon):
+            unchecked = [i for i in [x for x in unseen if (x not in new_samples)]]
+            pt = np.random.randint(0, len(unchecked))
+
+            print(X_titles[pt])
+            new_samples.append(pt)
+            new_labels.append(map_labels(user_test[pt]))
+        else:
+            min_seen = [float('inf'), -1]
+            for i in [x for x in unseen if (x not in new_samples)]:
+                for j in (liked+new_samples):
+                    v1 = items[i,:]
+                    v2 = items[j,:]
+                    dist = euclidean_distance(v1, v2)
+                    if dist < min_seen[0]:
+                        min_seen = [dist, i]
+
+            print(X_titles[min_seen[1]])
+            new_samples.append(min_seen[1])
+            new_labels.append(map_labels(user_test[min_seen[1]]))
+
+        # All items
+        plt.subplot(2,2,tr+1)
+        plt.subplots_adjust(wspace=0.4, hspace=0.4)
+
+        # plt.scatter(items[:,0], items[:,1], alpha=0.1, c=['black']*items.shape[0])
+        plt.scatter(items[liked,0], items[liked,1], s=50,c=['green']*len(liked), alpha=0.25)
+        plt.scatter(items[disliked,0], items[disliked,1], s=50,c=['red']*len(disliked), alpha=0.25)
+        plt.scatter(items[new_samples,0], items[new_samples,1], s=100,c=new_labels, alpha=1.00)
+
+        # Plot model
+        C = 1.0
+        rated = liked+disliked
+        X = np.concatenate((items[rated,:], items[new_samples,:]))
+        y = [int(x > 0) for x in np.concatenate((user_train[rated], user_test[new_samples]))]
+        #clf = svm.SVC(kernel='linear', C=C).fit(X=X, y=y)
+        #clf = svm.SVC(kernel='poly', degree=3, C=C).fit(X=X, y=y)
+        #clf = svm.SVC(kernel='rbf', gamma=0.7, C=C).fit(X=X, y=y)
+        clf = KNeighborsClassifier(n_neighbors=1).fit(X=X,y=y)
+        plot_mesh(X_svd, clf)
+    plt.suptitle('Epsilon-Greedy Recommendation')
+
+    plt.show()
     return
 
 if __name__ == "__main__":
@@ -355,7 +461,7 @@ if __name__ == "__main__":
     X_svd = np.load('ml_100k_svd.npy')
 
     #model = TSNE(n_components=2, random_state=0)
-    #X_svd = model.fit_transform(X_svd) 
+    #X_svd = model.fit_transform(X_svd)
 
     # Peek at explained variance
     #plt.plot(range(s.shape[0]), np.cumsum(s) / np.sum(s))
@@ -373,8 +479,8 @@ if __name__ == "__main__":
     test_counts = [(i, np.count_nonzero(X_test[i,:])) for i in range(X_test.shape[0])]
     #print(test_counts)
 
-    # So there is overlap from train / test in (uid, rid, rating) tuples. 
-    # Every user in test is in train, with some nonzero number of ratings. 
+    # So there is overlap from train / test in (uid, rid, rating) tuples.
+    # Every user in test is in train, with some nonzero number of ratings.
 
     # Some user counts:
     # User 0: 262
@@ -401,14 +507,19 @@ if __name__ == "__main__":
         trials = 36
         #trials = len(X_test[USER,:].nonzero()[0])
 
-        print("\nSelecting samples for user:", USER)
-        if alg == 'greedy':
-            greedy_select(X_train[USER,:], X_test[USER,:], X_svd, trials=trials)
-        elif alg == 'antigreedy':
-            antigreedy_select(X_train[USER,:], X_test[USER,:], X_svd, trials=trials)
-        elif alg == 'active':
-            active_select(X_train[USER,:], X_test[USER,:], X_svd, trials=trials)
-        else:
-            print("Input \'greedy\' or \'antigreedy\' or \'active\'")
-
-
+    print("\nSelecting samples for user:", USER)
+    if alg == 'greedy':
+        greedy_select(X_train[USER,:], X_test[USER,:], X_svd, trials=4)
+    elif alg == 'antigreedy':
+        antigreedy_select(X_train[USER,:], X_test[USER,:], X_svd, trials=4)
+    elif alg == 'active':
+        active_select(X_train[USER,:], X_test[USER,:], X_svd, trials=4)
+    elif alg == 'random':
+        # X_train and X_test switched; only 10 samples for training!
+        random_select(X_test[USER,:], X_train[USER,:], X_svd, trials=4)
+    elif alg == 'epsgreedy':
+        # X_train and X_test switched; only 10 samples for training!
+        eps = sys.argv[2]
+        eps_select(float(eps), X_test[USER,:], X_train[USER,:], X_svd, trials=4)
+    else:
+        print("Input \'greedy\' or \'antigreedy\' or \'active\'")
