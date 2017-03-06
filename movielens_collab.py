@@ -304,12 +304,13 @@ def random_select(user_train, user_test, items, trials=10):
     for tr in range(trials):
 
         # Getting a random point
-        unchecked = [i for i in [x for x in unseen if (x not in new_samples)]]
+        unchecked = [x for x in unseen if (x not in new_samples)]
         pt = np.random.randint(0, len(unchecked))
+        # print(pt, len(unchecked), len(new_samples), unseen)
 
-        print(X_titles[pt])
-        new_samples.append(pt)
-        new_labels.append(map_labels(user_test[pt]))
+        print(X_titles[unchecked[pt]])
+        new_samples.append(unchecked[pt])
+        new_labels.append(map_labels(user_test[unchecked[pt]]))
 
         # All items
         plt.subplot(int(np.sqrt(trials)),int(np.sqrt(trials)),tr+1)
@@ -346,18 +347,16 @@ def eps_select(epsilon, user_train, user_test, items, trials=10):
     new_samples = []
     new_labels = []
 
-    print("Running using epsilon=" + str(epsilon*100) + "%")
+    print("Running using epsilon= " + str(epsilon*100) + "%")
 
     for tr in range(trials):
-
-        # Random
         if (np.random.uniform() <= epsilon):
-            unchecked = [i for i in [x for x in unseen if (x not in new_samples)]]
+            unchecked = [x for x in unseen if (x not in new_samples)]
             pt = np.random.randint(0, len(unchecked))
 
-            print(X_titles[pt])
-            new_samples.append(pt)
-            new_labels.append(map_labels(user_test[pt]))
+            print("R: " + X_titles[unchecked[pt]])
+            new_samples.append(unchecked[pt])
+            new_labels.append(map_labels(user_test[unchecked[pt]]))
         else:
             min_seen = [float('inf'), -1]
             for i in [x for x in unseen if (x not in new_samples)]:
@@ -368,7 +367,7 @@ def eps_select(epsilon, user_train, user_test, items, trials=10):
                     if dist < min_seen[0]:
                         min_seen = [dist, i]
 
-            print(X_titles[min_seen[1]])
+            print("G: " + X_titles[min_seen[1]])
             new_samples.append(min_seen[1])
             new_labels.append(map_labels(user_test[min_seen[1]]))
 
