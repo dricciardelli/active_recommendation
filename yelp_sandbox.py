@@ -4,7 +4,7 @@ import csv
 import json
 
 import pandas
-import numpy as np 
+import numpy as np
 import scipy.sparse
 import matplotlib.pyplot as plt
 
