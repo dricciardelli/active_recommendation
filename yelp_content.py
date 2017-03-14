@@ -2,11 +2,13 @@ import os
 import json
 import numpy as np
 import pandas as pd
+from yelp_featurize import Business
 
 # Do dimensionality reduction here
 def dim_reduce(M, k):
-
+    # we only have 5 features lol
     return None
+
 
 # Load data in here and convert to matrix
 # (Load more data later)
@@ -15,20 +17,16 @@ def load_data(business_file):
     business_datalist = []
     with open(business_file) as business_data:
         for line in business_data:
-            if max_data:
-                business_datalist.append(json.loads(line))
-                max_data -=1
-            else:
-                break
+            business_datalist.append(json.loads(line))
 
     columns = []
+    print_ct = 1
     for bus in business_datalist:
-        # sort values in alphabetical order of their keys
-        sorted_kvs = sorted([(k, v) for (k, v) in bus.items()], key=lambda (k, v): k)
-        col = [v for (k, v) in sorted_kvs]
-        print col
-        columns.append(np.array(col))
+        b = Business(bus)
+        col = b.featurize()
+        columns.append(col)
     business_matrix = np.array(columns)
+    print (business_matrix.T).shape
     return business_matrix.T
 
 
