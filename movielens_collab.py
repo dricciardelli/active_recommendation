@@ -58,9 +58,10 @@ def greedy_select(user_train, user_test, items, trials=10, num_test=50):
 
     for tr in range(trials):
 
+        u = [x for x in unseen if (x not in new_samples)]
         # Looking for point with smallest minimum distance
         min_seen = [float('inf'), -1]
-        for i in [x for x in unseen if (x not in new_samples)]:
+        for i in u:
             v1 = items[i,:]
             for j in (liked+new_samples):
                 v2 = items[j,:]
