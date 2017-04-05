@@ -69,7 +69,7 @@ def greedy_select(user_train, user_test, items, trials=10, num_test=50):
                 if dist < min_seen[0]:
                     min_seen = [dist, i]
 
-        print(X_titles[min_seen[1]])
+        print(X_titles[min_seen[1]], min_seen[1], len(u))
         new_samples.append(min_seen[1])
         new_labels.append(map_labels(user_test[min_seen[1]]))
 
@@ -491,6 +491,10 @@ if __name__ == "__main__":
 
     # Pick USERS with many train samples for the demo
     USERS = [i for i,c in train_counts if c > 100]
+
+    # Pick the first User
+    USERS = USERS[:1]
+
     print(len(USERS))
 
     # Swap train and test to get more test samples
@@ -503,8 +507,8 @@ if __name__ == "__main__":
     # We only have ten test samples per user
 
         # Set number of trials equal to total number of unseen movies
-        trials = 9
-        #trials = len(X_test[USER,:].nonzero()[0])
+        # trials = 9
+        trials = len(X_test[USER,:].nonzero()[0]) - 50
 
         print("\nSelecting samples for user:", USER)
         if alg == 'greedy':
@@ -515,10 +519,10 @@ if __name__ == "__main__":
             active_select(X_train[USER,:], X_test[USER,:], X_svd, trials=trials)
         elif alg == 'random':
             # X_train and X_test switched; only 10 samples for training!
-            random_select(X_test[USER,:], X_train[USER,:], X_svd, trials=trials)
+            random_select(X_train[USER,:], X_test[USER,:], X_svd, trials=trials)
         elif alg == 'epsgreedy':
             # X_train and X_test switched; only 10 samples for training!
             eps = sys.argv[2]
-            eps_select(float(eps), X_test[USER,:], X_train[USER,:], X_svd, trials=trials)
+            eps_select(float(eps), X_train[USER,:], X_test[USER,:], X_svd, trials=trials)
         else:
             print("Input \'greedy\' or \'antigreedy\' or \'active\'")
