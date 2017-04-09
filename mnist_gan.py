@@ -10,11 +10,11 @@ from keras.layers.core import Reshape, Dense, Dropout, Flatten
 from keras.layers.advanced_activations import LeakyReLU
 from keras.layers.convolutional import Convolution2D, UpSampling2D
 from keras.layers.normalization import BatchNormalization
-from keras.regularizers import l1, l1l2
+from keras.regularizers import l1, l1_l2
 from keras.datasets import mnist
 from keras.optimizers import Adam
 from keras import backend as K
-from keras import initializations
+from keras import initializers
 
 K.set_image_dim_ordering('th')
 
@@ -33,7 +33,7 @@ X_train = X_train.reshape(60000, 784)
 
 # Function for initializing network weights
 def initNormal(shape, name=None):
-    return initializations.normal(shape, scale=0.02, name=name)
+    return initializers.normal(shape, scale=0.02, name=name)
 
 # Optimizer
 adam = Adam(lr=0.0002, beta_1=0.5)
@@ -176,5 +176,6 @@ def train_classifier():
     return clf
 
 if __name__ == '__main__':
-    train_classifier()
-    train(200, 128)
+    pass
+    # train_classifier()
+    # train(200, 128)
