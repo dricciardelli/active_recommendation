@@ -1,28 +1,20 @@
+import tensorflow as tf
+from tensorflow.examples.tutorials.mnist import input_data
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import os
-import tensorflow as tf
-import tensorflow.examples.tutorials.mnist.input_data as input_data
 
-from sklearn.svm import SVC
-from sklearn.metrics import accuracy_score
-import pickle
 
-mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
+mnist = input_data.read_data_sets('../../MNIST_data', one_hot=True)
 
 mb_size = 32
-X_dim = mnist.train.images.shape[1] # number of features
-print "X_dim: ", X_dim
-y_dim = mnist.train.labels.shape[1] # number of labels
-print "y_dim: ", y_dim
-z_dim = 10 # num of classes
-h_dim = 128 # hidden layer size
+X_dim = mnist.train.images.shape[1]
+y_dim = mnist.train.labels.shape[1]
+z_dim = 10
+h_dim = 128
 eps = 1e-8
-
-d_lr = 1e-3 # discriminator learning rate
-g_lr = 1e-3 # generator learning rate
-
+lr = 1e-3
 d_steps = 3
 
 
@@ -41,18 +33,6 @@ def plot(samples):
 
     return fig
 
-def full_plot(samples_list, itr):
-    n = len(samples_list)
-    m = len(samples_list[0])
-
-    _, ax = plt.subplots(n, m, sharex=True, sharey=True)
-    for i in range(n):
-        for j in range(m):
-            ax[i][j].imshow(samples_list[i][j].reshape(28,28), 'gray')
-            ax[i][j].set_axis_off()
-    plt.savefig('out/sample_{}'.format(str(itr).zfill(3)) , dpi=600)
-    plt.close()
-    return
 
 def xavier_init(size):
     in_dim = size[0]
@@ -121,9 +101,9 @@ DC_loss = -(D_loss + C_loss)
 G_loss = tf.reduce_mean(tf.log(D_fake + eps))
 GC_loss = -(G_loss + C_loss)
 
-D_solver = (tf.train.AdamOptimizer(learning_rate=d_lr)
+D_solver = (tf.train.AdamOptimizer(learning_rate=lr)
             .minimize(DC_loss, var_list=theta_D))
-G_solver = (tf.train.AdamOptimizer(learning_rate=g_lr)
+G_solver = (tf.train.AdamOptimizer(learning_rate=lr)
             .minimize(GC_loss, var_list=theta_G))
 
 
@@ -133,16 +113,7 @@ sess.run(tf.global_variables_initializer())
 if not os.path.exists('out/'):
     os.makedirs('out/')
 
-itr = 0
-
-X_train = mnist.train.images
-y_train = mnist.train.labels
-
-X_test = mnist.test.images
-y_test = mnist.test.labels
-
-y_train_indices = np.argmax(y_train, axis=1)
-y_test_indices = np.argmax(y_test, axis=1)
+i = 0
 
 for it in range(1000000):
     X_mb, y_mb = mnist.train.next_batch(mb_size)
@@ -160,53 +131,21 @@ for it in range(1000000):
 
     if it % 1000 == 0:
 
-        n_imgs = 10
+        n_imgs = 16
+
+        idx = np.random.randint(0, 10)
         
-        # Pick all numbers to generate samples from
-        c_list = [np.zeros([n_imgs, y_dim]) for _ in range(10)]
-        for i in range(10):
-            c_list[i][range(n_imgs), i] = 1
+        # Pick a random number to generate samples from
+        c = np.zeros([n_imgs, y_dim])
+        c[range(n_imgs), idx] = 1
 
-        samples_list = [sess.run(G_sample, feed_dict={z: sample_z(n_imgs, z_dim), y: c_list[i]}) for i in range(10)]
+        samples = sess.run(G_sample, feed_dict={z: sample_z(n_imgs, z_dim), y: c})
 
-        # print('Iter: {}; DC_loss: {:.4}; GC_loss: {:.4}'
-        #       .format(it, DC_loss_curr, GC_loss_curr))
-        # full_plot(samples_list, itr)
+        print('Iter: {}; DC_loss: {:.4}; GC_loss: {:.4}; Idx; {}'
+              .format(it, DC_loss_curr, GC_loss_curr, idx))
 
-        itr += 1
-
-# Get data
-X_train = mnist.train.images
-y_train = [np.argmax(one_hot) for one_hot in list(mnist.train.labels)]
-X_test = mnist.test.images
-y_test = [np.argmax(one_hot) for one_hot in list(mnist.test.labels)]
-
-# Train
-if os.path.exists('svm_basic.sav'):
-    svm_basic = pickle.load(open('svm_basic.sav', 'rb'))
-else:
-    svm_basic = SVC()
-    print ("Training svm ... ")
-    svm_basic.fit(X_train[:1000], y_train[:1000])
-    pickle.dump(svm_basic, open("svm_basic.sav", 'wb'))
-    print ("Trained and saved!")
-
-# Predict
-z_train = svm_basic.predict(X_train[:1000])
-# z_test = svm_basic.predict(X_test)
-print ("Training Accuracy: {0:.0f}%").format(accuracy_score(y_train[:1000], z_train)*100)
-# print ("Test Accuracy: {0:.0f}%").format(accuracy_score(y_test, z_test))
-
-# Append generated data to original train data
-train_preds = sess.run(C_real, feed_dict={X: X_train})
-pred_train_indices = np.argmax(train_preds, axis=1)
-
-test_preds = sess.run(C_real, feed_dict={X: X_test})
-pred_test_indices = np.argmax(test_preds, axis=1)
-
-print('Train Accuracy: {}'.format(accuracy_score(y_train_indices, pred_train_indices)))
-print('Test Accuracy: {}'.format(accuracy_score(y_test_indices, pred_test_indices)))
-
-full_plot(samples_list, itr)
-
-
+        fig = plot(samples)
+        plt.savefig('out/{}.png'
+                    .format(str(i).zfill(3)), bbox_inches='tight')
+        i += 1
+        plt.close(fig)
