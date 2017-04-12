@@ -1,29 +1,28 @@
+import tensorflow as tf
+from tensorflow.examples.tutorials.mnist import input_data
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import os
-import tensorflow as tf
-import tensorflow.examples.tutorials.mnist.input_data as input_data
 
-from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score
-import pickle
 
-mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
+
+mnist = input_data.read_data_sets('../../MNIST_data', one_hot=True)
 
 mb_size = 32
-X_dim = mnist.train.images.shape[1] # number of features
-print "X_dim: ", X_dim
-y_dim = mnist.train.labels.shape[1] # number of labels
-print "y_dim: ", y_dim
-z_dim = 10 # num of classes
-h_dim = 128 # hidden layer size
+X_dim = mnist.train.images.shape[1]
+y_dim = mnist.train.labels.shape[1]
+z_dim = 10
+h_dim = 128
 eps = 1e-8
 
-d_lr = 1e-3 # discriminator learning rate
-g_lr = 1e-3 # generator learning rate
+d_lr = 1e-3
+g_lr = 1e-3
 
 d_steps = 3
+
+restore = False
 
 
 def plot(samples):
@@ -50,7 +49,7 @@ def full_plot(samples_list, itr):
         for j in range(m):
             ax[i][j].imshow(samples_list[i][j].reshape(28,28), 'gray')
             ax[i][j].set_axis_off()
-    plt.savefig('out/sample_{}'.format(str(itr).zfill(3)) , dpi=600)
+    plt.savefig('out2/sample_{}'.format(str(itr).zfill(3)) , dpi=600)
     plt.close()
     return
 
@@ -129,6 +128,7 @@ G_solver = (tf.train.AdamOptimizer(learning_rate=g_lr)
 
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
+saver = tf.train.Saver()
 
 if not os.path.exists('out/'):
     os.makedirs('out/')
@@ -144,69 +144,75 @@ y_test = mnist.test.labels
 y_train_indices = np.argmax(y_train, axis=1)
 y_test_indices = np.argmax(y_test, axis=1)
 
-for it in range(1000000):
-    X_mb, y_mb = mnist.train.next_batch(mb_size)
-    z_mb = sample_z(mb_size, z_dim)
+if (restore):
+    aver.restore(sess, "out/model.ckpt")
+    print("Model restored.")
 
-    _, DC_loss_curr = sess.run(
-        [D_solver, DC_loss],
-        feed_dict={X: X_mb, y: y_mb, z: z_mb}
-    )
+    n_imgs = 1000
 
-    _, GC_loss_curr = sess.run(
-        [G_solver, GC_loss],
-        feed_dict={X: X_mb, y: y_mb, z: z_mb}
-    )
+    # Pick all numbers to generate samples from
+    c_list = [np.zeros([n_imgs, y_dim]) for _ in range(10)]
+    for i in range(10):
+        c_list[i][range(n_imgs), i] = 1
 
-    if it % 1000 == 0:
+    mnist_augmented_train_images = mnist.train.images
+    mnist_augmented_train_labels = mnist.train.labels
+    sample = sess.run(G_sample, feed_dict={z: sample_z(n_imgs, z_dim), y: c_list[0]})
+    generated_images = np.array(sample)
+    generated_labels = np.array(np.array(c_list[i]))
+    for i in range(10):
+        sample = sess.run(G_sample, feed_dict={z: sample_z(n_imgs, z_dim), y: c_list[i]})
+        mnist_augmented_train_images = np.concatenate((mnist_augmented_train_images, sample), axis=0)
+        mnist_augmented_train_labels = np.concatenate((mnist_augmented_train_labels, np.array(c_list[i])), axis=0)
+        if (i != 0):
+            generated_images = np.concatenate((generated_images, sample), axis=0)
+            generated_labels = np.concatenate((generated_labels, np.array(c_list[i])), axis=0)
 
-        n_imgs = 10
-        
-        # Pick all numbers to generate samples from
-        c_list = [np.zeros([n_imgs, y_dim]) for _ in range(10)]
-        for i in range(10):
-            c_list[i][range(n_imgs), i] = 1
+    np.save('mnist_a_train_img.npy', mnist_augmented_train_images)
+    np.save('mnist_a_train_label.npy', mnist_augmented_train_labels)
+    np.save('generated_img.npy', generated_images)
+    np.save('generated_label.npy', generated_labels)
 
-        samples_list = [sess.run(G_sample, feed_dict={z: sample_z(n_imgs, z_dim), y: c_list[i]}) for i in range(10)]
-
-        # print('Iter: {}; DC_loss: {:.4}; GC_loss: {:.4}'
-        #       .format(it, DC_loss_curr, GC_loss_curr))
-        # full_plot(samples_list, itr)
-
-        itr += 1
-
-# Get data
-X_train = mnist.train.images
-y_train = [np.argmax(one_hot) for one_hot in list(mnist.train.labels)]
-X_test = mnist.test.images
-y_test = [np.argmax(one_hot) for one_hot in list(mnist.test.labels)]
-
-# Train
-if os.path.exists('svm_basic.sav'):
-    svm_basic = pickle.load(open('svm_basic.sav', 'rb'))
 else:
-    svm_basic = SVC()
-    print ("Training svm ... ")
-    svm_basic.fit(X_train[:1000], y_train[:1000])
-    pickle.dump(svm_basic, open("svm_basic.sav", 'wb'))
-    print ("Trained and saved!")
+    for it in range(1000000):
+        X_mb, y_mb = mnist.train.next_batch(mb_size)
+        z_mb = sample_z(mb_size, z_dim)
 
-# Predict
-z_train = svm_basic.predict(X_train[:1000])
-# z_test = svm_basic.predict(X_test)
-print ("Training Accuracy: {0:.0f}%").format(accuracy_score(y_train[:1000], z_train)*100)
-# print ("Test Accuracy: {0:.0f}%").format(accuracy_score(y_test, z_test))
+        _, DC_loss_curr = sess.run(
+            [D_solver, DC_loss],
+            feed_dict={X: X_mb, y: y_mb, z: z_mb}
+        )
 
-# Append generated data to original train data
-train_preds = sess.run(C_real, feed_dict={X: X_train})
-pred_train_indices = np.argmax(train_preds, axis=1)
+        _, GC_loss_curr = sess.run(
+            [G_solver, GC_loss],
+            feed_dict={X: X_mb, y: y_mb, z: z_mb}
+        )
 
-test_preds = sess.run(C_real, feed_dict={X: X_test})
-pred_test_indices = np.argmax(test_preds, axis=1)
+        if it % 1000 == 0:
 
-print('Train Accuracy: {}'.format(accuracy_score(y_train_indices, pred_train_indices)))
-print('Test Accuracy: {}'.format(accuracy_score(y_test_indices, pred_test_indices)))
+            n_imgs = 10
+            
+            # Pick all numbers to generate samples from
+            c_list = [np.zeros([n_imgs, y_dim]) for _ in range(10)]
+            for i in range(10):
+                c_list[i][range(n_imgs), i] = 1
 
-full_plot(samples_list, itr)
+            samples_list = [sess.run(G_sample, feed_dict={z: sample_z(n_imgs, z_dim), y: c_list[i]}) for i in range(10)]
 
+            print('Iter: {}; DC_loss: {:.4}; GC_loss: {:.4}'
+                  .format(it, DC_loss_curr, GC_loss_curr))
 
+            train_preds = sess.run(C_real, feed_dict={X: X_train})
+            pred_train_indices = np.argmax(train_preds, axis=1)
+
+            test_preds = sess.run(C_real, feed_dict={X: X_test})
+            pred_test_indices = np.argmax(test_preds, axis=1)
+
+            print('Train Accuracy: {}'.format(accuracy_score(y_train_indices, pred_train_indices)))
+            print('Test Accuracy: {}'.format(accuracy_score(y_test_indices, pred_test_indices)))
+
+            full_plot(samples_list, itr)
+            save_path = saver.save(sess, "out/model.ckpt")
+            print("Model saved in file: %s" % save_path)
+
+            itr += 1
