@@ -13,18 +13,42 @@ mnist = input_data.read_data_sets('../../MNIST_data', one_hot=True)
 load_model = False
 
 # to use all of mnist and all generated images as training data
-X_train = np.load("mnist_a_train_img.npy")
-y_train = np.load("mnist_a_train_label.npy")
+#X_train = np.load("mnist_a_train_img.npy")
+#y_train = np.load("mnist_a_train_label.npy")
 
-# to use only generated images as training data
-#X_train = np.load("generated_img.npy")
-#y_train = np.load("generated_label.npy")
+# to use random subset of augmeted images as training
+#idx = np.random.choice(np.arange(len(X_train)), 5000, replace=False)
+#X_train = X_train[idx]
+#y_train = y_train[idx]
 
+#to use only generated images as training data
+X_train = np.load("generated_img.npy")
+y_train = np.load("generated_label.npy")
+
+x_sample = mnist.train.images
+y_sample = mnist.train.labels
+idx = np.random.choice(np.arange(len(x_sample)), 3000, replace=False)
+x_sample = x_sample[idx]
+y_sample = y_sample[idx]
+
+X_train = np.concatenate((X_train, x_sample), axis=0)
+y_train = np.concatenate((y_train, y_sample), axis=0)
 y_train = [np.argmax(one_hot) for one_hot in list(y_train)]
+
+
+
+#y_train = [np.argmax(one_hot) for one_hot in list(y_train)]
 
 # to use original mnist images as training data
 #X_train = mnist.train.images
+# to use random subset of augmeted images as training
+#idx = np.random.choice(np.arange(len(X_train)), 4000, replace=False)
+#X_train = X_train[idx]
+#y_train = mnist.train.labels[idx]
+
 #y_train = [np.argmax(one_hot) for one_hot in list(mnist.train.labels)]
+#y_train = [np.argmax(one_hot) for one_hot in list(y_train)]
+
 X_test = mnist.test.images
 y_test = [np.argmax(one_hot) for one_hot in list(mnist.test.labels)]
 
@@ -42,10 +66,10 @@ else:
 	print ("Trained and saved!")
 
 # Predict
-z_train = svm_basic.predict(X_train[:1000])
+z_train = svm_basic.predict(X_train)
 print(z_train.shape)
-print(np.array(y_train[:1000]).shape)
-print (("Training Accuracy: {0:.0f}%").format(accuracy_score(y_train[:1000], z_train)*100))
+print(np.array(y_train).shape)
+print (("Training Accuracy: {0:.0f}%").format(accuracy_score(y_train, z_train)*100))
 
 z_test = svm_basic.predict(X_test[:1000])
 print(z_test.shape)
